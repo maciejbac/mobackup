@@ -1,0 +1,41 @@
+#!/bin/bash
+arg1=$1
+homeip=172.24.4.45
+now=$(date +"%m_%d_%Y")
+log="/var/log/mobackup.log"
+if [[ -z "$arg1" ]] ; then
+    filename="/var/www/$now-website.tar.gz"
+else
+    filename="/var/www/$arg1-$now-website.tar.gz"
+fi
+
+tar -zcf $filename /var/www/maciej.online/
+
+if [[ $? -eq 1 ]] ; then
+    echo "$(date) - Website backup FAILED." >> $log
+    exit 1
+fi
+
+
+if [[ -z "$arg1" ]] ; then
+    scp -P 22 $filename mac@$homeip:websitebu/
+    scpaut=$?
+else
+    scp -P 22 $filename mac@$homeip:manualwebsitebu/
+    scpman=$?
+fi
+
+if [[ -z "$arg1" ]] ; then
+    if [[ $scpaut -eq 0 ]] ; then
+        echo "$(date) - Automatic website backup complete. Status: OK." >> $log
+        rm $filename
+    else
+        echo "$(date) - Automatic website backup FAILED." >> $log
+    fi
+else
+    if [[ $scpman -eq 0 ]] ; then
+        echo "$(date) - Manual website backup complete. Status: OK. Note: $arg1" >> $log
+    else
+        echo "$(date) - Manual website backup FAILED. Note: $arg1" >> $log
+    fi
+fi
